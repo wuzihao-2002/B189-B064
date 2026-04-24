@@ -251,6 +251,7 @@ class PermissionSetter(BasicSettingLauncher):
                 line_num + 2, re.sub(SERIES_REPLACE_REGEX, "", file_detail.file),
                 err_info))
         else:
+            file_detail.err_info = "-"
             if transfer_mode and site_is_change:
                 file_detail.setting_result = "□"
             else:
