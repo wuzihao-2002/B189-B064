@@ -10,7 +10,7 @@ from Common import LogHelper
 
 PARAM = "id,mimeType,ownedByMe,trashed,writersCanShare,permissions"
 
-exception_interrupt = False
+exception_interrupt = threading.Event()
 
 
 class ActualPermissionResearcher:
@@ -34,7 +34,7 @@ class ActualPermissionResearcher:
 
             # wait task end
             read_thread.join()
-            while not exception_interrupt and self.thread_pool.state():
+            while not exception_interrupt.is_set() and self.thread_pool.state():
                 sleep(5)
 
             # shutdown thread pool and commit data to db
@@ -91,6 +91,12 @@ class ActualPermissionResearcher:
         return file_list
 
     @staticmethod
+    def get_exception_interrupt():
+        return exception_interrupt.is_set()
+
+    @staticmethod
     def set_exception_interrupt(flg):
-        global exception_interrupt
-        exception_interrupt = flg
+        if flg:
+            exception_interrupt.set()
+        else:
+            exception_interrupt.clear()

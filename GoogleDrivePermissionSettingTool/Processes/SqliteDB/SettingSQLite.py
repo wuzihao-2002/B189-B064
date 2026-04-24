@@ -15,13 +15,13 @@ from Common import TsvHelper, LogHelper
 
 
 class SettingSQLite:
-    lock = threading.Lock()
 
     def __init__(self, db_path):
         self.db_path = db_path
         self.conn = sqlite3.connect(db_path, check_same_thread=False)
         self.save_exit = False
         self.commit_thread = None
+        self.lock = threading.Lock()
 
     def init_db(self):
         init_command = SqlCommand.create_tbl_file_detail_sql
@@ -31,7 +31,8 @@ class SettingSQLite:
         init_command += SqlCommand.create_tbl_file_actual_permission_info_sql
         init_command += SqlCommand.vacuum_sql
 
-        self.conn.executescript(init_command)
+        with self.lock:
+            self.conn.executescript(init_command)
 
     def re_init(self):
         self.__init__(db_path=self.db_path)
@@ -46,13 +47,13 @@ class SettingSQLite:
             if data is not None:
                 # save file info to db
                 insert_sql = self.get_save_check_result_sql(data)
-                self.conn.execute(insert_sql, data.get_values())
+                self.execute(insert_sql, data.get_values())
 
         except Exception as e:
             LogHelper.info("Save CheckResult To Sqlite Err: %s" % e)
             LogHelper.debug(traceback.format_exc())
-            BasicCheckLauncher.exception_interrupt = True
-            ActualPermissionResearcher.exception_interrupt = True
+            BasicCheckLauncher.BasicCheckLauncher.set_exception_interrupt(True)
+            ActualPermissionResearcher.ActualPermissionResearcher.set_exception_interrupt(True)
 
     def save_set_result(self, data):
         """
@@ -68,17 +69,20 @@ class SettingSQLite:
                 if need_update_writer:
                     # update field:writer,setting_result
                     update_sql = SqlCommand.update_file_detail_set_result_and_writer_sql
-                    self.conn.execute(update_sql,
-                                      [file_detail.setting_result, file_detail.err_info, file_detail.writer, file_detail.line_num])
+                    self.execute(update_sql,
+                                 [file_detail.setting_result, file_detail.err_info,
+                                  file_detail.writer, file_detail.line_num])
                 else:
                     # update field:setting_result
                     update_sql = SqlCommand.update_file_detail_set_result_sql
-                    self.conn.execute(update_sql, [file_detail.setting_result, file_detail.err_info, file_detail.line_num])
+                    self.execute(update_sql,
+                                 [file_detail.setting_result, file_detail.err_info,
+                                  file_detail.line_num])
 
         except Exception as e:
             LogHelper.info("Save SettingResult To Sqlite Err: %s" % e)
             LogHelper.debug(traceback.format_exc())
-            BasicSettingLauncher.exception_interrupt = True
+            BasicSettingLauncher.BasicSettingLauncher.set_exception_interrupt(True)
 
     def retrieve_work_iterator(self, research_tbl):
         """
@@ -95,7 +99,7 @@ class SettingSQLite:
                 return
 
             # get the google file that need to be set
-            cursor = self.conn.execute(select_sql)
+            cursor = self.execute(select_sql)
             if cursor.description is not None:
                 mapper = self.get_cursor_mapper(cursor.description)
 
@@ -116,13 +120,15 @@ class SettingSQLite:
         except Exception as e:
             LogHelper.info("Get Setting items From Sqlite Err: %s" % e)
             LogHelper.debug(traceback.format_exc())
-            BasicSettingLauncher.exception_interrupt = True
+            BasicSettingLauncher.BasicSettingLauncher.set_exception_interrupt(True)
 
     def execute(self, sql, *args, **kwargs):
-        return self.conn.execute(sql, *args, **kwargs)
+        with self.lock:
+            return self.conn.execute(sql, *args, **kwargs)
 
     def commit(self):
-        self.conn.commit()
+        with self.lock:
+            self.conn.commit()
 
     def _auto_commit(self, second):
         """
@@ -141,12 +147,12 @@ class SettingSQLite:
         except Exception as e:
             LogHelper.error("Sqlite commit Err:%s" % e)
             LogHelper.debug(traceback.format_exc())
-            BasicSettingLauncher.exception_interrupt = True
-            BasicCheckLauncher.exception_interrupt = True
-            ActualPermissionResearcher.exception_interrupt = True
+            BasicSettingLauncher.BasicSettingLauncher.set_exception_interrupt(True)
+            BasicCheckLauncher.BasicCheckLauncher.set_exception_interrupt(True)
+            ActualPermissionResearcher.ActualPermissionResearcher.set_exception_interrupt(True)
 
     def auto_commit(self, second=10):
-        self.commit_thread = threading.Thread(target=self._auto_commit, args={second})
+        self.commit_thread = threading.Thread(target=self._auto_commit, args=(second,))
         self.commit_thread.setDaemon(True)
         self.commit_thread.start()
 
@@ -216,7 +222,7 @@ class SettingSQLite:
         :param output_file:
         :return:
         """
-        cursor = self.conn.execute(SqlCommand.select_file_detail_sql)
+        cursor = self.execute(SqlCommand.select_file_detail_sql)
         mapper = self.get_cursor_mapper(cursor.description)
 
         # loop write

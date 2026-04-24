@@ -10,7 +10,7 @@ from Processes.SqliteDB import SqlCommand
 from Processes.basic.BasicTsvInfoChecker import gid_get
 from Common import LogHelper
 
-exception_interrupt = False
+exception_interrupt = threading.Event()
 
 
 class BasicCheckLauncher:
@@ -38,7 +38,7 @@ class BasicCheckLauncher:
 
             # wait task end
             read_thread.join()
-            while not exception_interrupt and self.thread_pool.state():
+            while not exception_interrupt.is_set() and self.thread_pool.state():
                 sleep(5)
 
             # shutdown thread pool and commit data to db
@@ -97,9 +97,11 @@ class BasicCheckLauncher:
 
     @staticmethod
     def get_exception_interrupt():
-        return exception_interrupt
+        return exception_interrupt.is_set()
 
     @staticmethod
     def set_exception_interrupt(flg):
-        global exception_interrupt
-        exception_interrupt = flg
+        if flg:
+            exception_interrupt.set()
+        else:
+            exception_interrupt.clear()

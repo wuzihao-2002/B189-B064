@@ -54,8 +54,8 @@ class CheckAndSetThreadPool(ThreadPoolExecutor):
         except Exception as e:
             LogHelper.info("Target Method Execute Err: %s" % e)
             LogHelper.debug(traceback.format_exc())
-            BasicCheckLauncher.exception_interrupt = True
-            BasicSettingLauncher.exception_interrupt = True
+            BasicCheckLauncher.BasicCheckLauncher.set_exception_interrupt(True)
+            BasicSettingLauncher.BasicSettingLauncher.set_exception_interrupt(True)
 
         with self.mutex:
             self.working_count -= 1
@@ -110,8 +110,9 @@ class CheckAndSetThreadPool(ThreadPoolExecutor):
 
                 while not self.work_queue.empty():
                     # End thread when an exception occurs
-                    if BasicCheckLauncher.exception_interrupt or BasicSettingLauncher.exception_interrupt \
-                            or ActualPermissionResearcher.exception_interrupt:
+                    if BasicCheckLauncher.BasicCheckLauncher.get_exception_interrupt() \
+                            or BasicSettingLauncher.BasicSettingLauncher.get_exception_interrupt() \
+                            or ActualPermissionResearcher.ActualPermissionResearcher.get_exception_interrupt():
                         return
 
                     while self._work_queue.qsize() > 10:
@@ -126,9 +127,9 @@ class CheckAndSetThreadPool(ThreadPoolExecutor):
         except Exception as e:
             LogHelper.info("ThreadPool Execute Err: %s" % e)
             LogHelper.debug(traceback.format_exc())
-            BasicCheckLauncher.exception_interrupt = True
-            BasicSettingLauncher.exception_interrupt = True
-            ActualPermissionResearcher.exception_interrupt = True
+            BasicCheckLauncher.BasicCheckLauncher.set_exception_interrupt(True)
+            BasicSettingLauncher.BasicSettingLauncher.set_exception_interrupt(True)
+            ActualPermissionResearcher.ActualPermissionResearcher.set_exception_interrupt(True)
 
     def close(self, wait=True):
         """

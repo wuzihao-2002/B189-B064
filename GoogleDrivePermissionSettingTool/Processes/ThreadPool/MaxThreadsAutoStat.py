@@ -27,6 +27,8 @@ class MaxThreadsAutoStat:
         self.terminal_file_name = f"{self.host}_{terminal_order}.txt"
         self.terminal_file = None
         self.thread_count = 0
+        self.scheduler_started = False
+        self.scheduler_lock = threading.Lock()
         self.handler_gid = self.get_gid(handle_uri)
         self.terminal_file_content = f"ToolType: SettingTool\nHandlerURI: {handle_uri}".encode()
 
@@ -96,15 +98,20 @@ class MaxThreadsAutoStat:
         self.schedule_task()
 
     def schedule_task(self):
+        with self.scheduler_lock:
+            if self.scheduler_started:
+                return
+            self.scheduler_started = True
+
         # update terminal file task
         update_thread = threading.Thread(target=self.schedule.update_terminal_file_schedule,
-                                         args={self.update_terminal_file})
+                                         args=(self.update_terminal_file,))
         update_thread.setDaemon(True)
         update_thread.start()
 
         # adjust thread pool task
         adjust_thread = threading.Thread(target=self.schedule.adjust_thread_count_schedule,
-                                         args={self.calculate_thread_count})
+                                         args=(self.calculate_thread_count,))
         adjust_thread.setDaemon(True)
         adjust_thread.start()
 
