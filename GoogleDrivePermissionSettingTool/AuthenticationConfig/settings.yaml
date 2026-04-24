@@ -1,0 +1,5 @@
+# Googleｱｶｳﾝﾄ認証ﾌｧｲﾙ
+save_credentials_file: AuthenticationConfig/saved_credentials.json
+
+# Googleｱｶｳﾝﾄ認証ﾌｧｲﾙ復号化キー
+save_credentials_privatekey_file: AuthenticationConfig/privatekey_saved_credentials.bin

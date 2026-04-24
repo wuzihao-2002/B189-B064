@@ -1,0 +1,29 @@
+# 起動パラメータ:
+# /MODE:S ユーザー権限設定
+# /MODE:M フォルダ移動&該当フォルダの権限再設定
+LaunchMode:
+  '/MODE:S'
+
+# 設定対象ファイルバス
+SettingTsvPath:
+  '調査結果.tsv'
+
+# ログレベル:(0:info、1:debug)
+log_level:
+  1
+
+# すべての端末で使用可能なスレッド数と制限
+MaxThreads_ProjectID:
+  100
+
+# 端末ファイル「IP_n.txt」の保存場所
+RunningTerminalFile_URI:
+  "https://drive.google.com/drive/folders/XXX"
+
+# 自端末で使用可能な最大スレッド数
+MaxThreads_Terminal:
+  32
+
+# 「IP_n.txt」更新計画(min)
+TerminalFileUpdateSchedule:
+  30
