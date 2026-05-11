@@ -149,7 +149,7 @@ class PermissionSetter(BasicSettingLauncher):
         self.execute_result_record(file_detail, err_info, line_num)
 
         # update set result
-        self.setting_sqlite.save_set_result({"file_detail": file_detail, "update_writer": False})
+        self.setting_sqlite.save_set_result({"file_detail": file_detail, "update_writer": False, "update_reader": False})
 
     def owner_transfer_set(self, handle_methods):
         """
@@ -160,6 +160,7 @@ class PermissionSetter(BasicSettingLauncher):
         err_info = None
         site_is_change = False
         update_writer = False
+        update_reader = False
 
         transfer_info = handle_methods["setting_work"]
         file_detail = handle_methods["file_detail"]
@@ -205,9 +206,15 @@ class PermissionSetter(BasicSettingLauncher):
                         return True
                 return False
             
-            if not contains_account(file_detail.writer, login_user_email) and not contains_account(
-                    file_detail.reader, login_user_email):
+            if not contains_account(file_detail.writer, login_user_email):
                 update_writer = True
+                if contains_account(file_detail.reader, login_user_email):
+                    update_reader = True
+                    # remove login user from reader, then add to writer
+                    remaining = [item for item in re.split(r'[,，]', file_detail.reader)
+                                 if not item.strip().lower() == login_user_email.lower()
+                                 and not item.strip().lower().startswith("%s(" % login_user_email.lower())]
+                    file_detail.reader = ",".join(remaining)
                 if len(file_detail.writer) == 0:
                     file_detail.writer = "%s(%s)" % (login_user_email, login_user_name)
                 else:
@@ -224,7 +231,7 @@ class PermissionSetter(BasicSettingLauncher):
         self.execute_result_record(file_detail, err_info, line_num, True, site_is_change)
 
         # update set result
-        self.setting_sqlite.save_set_result({"file_detail": file_detail, "update_writer": update_writer})
+        self.setting_sqlite.save_set_result({"file_detail": file_detail, "update_writer": update_writer, "update_reader": update_reader})
 
     def execute_result_record(self, file_detail, err_info, line_num, transfer_mode=False, site_is_change=False):
         """

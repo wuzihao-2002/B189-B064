@@ -179,6 +179,17 @@ update_file_detail_set_result_and_writer_sql = """
                                                     WHERE
                                                       line_num = ?;
                                                """
+update_file_detail_set_result_and_writer_and_reader_sql = """
+                                                              UPDATE
+                                                                  FileDetail
+                                                                SET
+                                                                  setting_result = ?,
+                                                                  err_info = ?,
+                                                                  writer = ?,
+                                                                  reader = ?
+                                                                WHERE
+                                                                  line_num = ?;
+                                                           """
 
 select_file_detail_sql = """
                             SELECT 

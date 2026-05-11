@@ -65,8 +65,15 @@ class SettingSQLite:
             if data is not None:
                 file_detail = data["file_detail"]
                 need_update_writer = data["update_writer"]
+                need_update_reader = data["update_reader"]
                 # save setting result
-                if need_update_writer:
+                if need_update_writer and need_update_reader:
+                    # update field:writer,reader,setting_result
+                    update_sql = SqlCommand.update_file_detail_set_result_and_writer_and_reader_sql
+                    self.execute(update_sql,
+                                 [file_detail.setting_result, file_detail.err_info,
+                                  file_detail.writer, file_detail.reader, file_detail.line_num])
+                elif need_update_writer:
                     # update field:writer,setting_result
                     update_sql = SqlCommand.update_file_detail_set_result_and_writer_sql
                     self.execute(update_sql,
