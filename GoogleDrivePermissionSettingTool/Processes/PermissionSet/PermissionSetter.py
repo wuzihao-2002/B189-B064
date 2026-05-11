@@ -6,6 +6,8 @@ from Processes.SqliteDB import SqlCommand
 from Common import LogHelper
 
 GOOGLE_FOLDER_NOT_EXISTS_ERR = "対象フォルダが存在しません。"
+CANNOT_DELETE_PERMISSION_ERR = "認証ユーザーは当該権限を削除できない。権限が継承されたものである場合は、limited access（限定アクセス）を利用する必要がある。（https://developers.google.com/workspace/drive/api/guides/limited-expansive-access）"
+CANNOT_MODIFY_INHERITED_PERMISSION_ERR = "直接または間接の親から継承されたアクセス権よりも低い権限に、アイテムの権限を変更することはできない。limited access（限定アクセス）を利用する必要がある。（https://developers.google.com/workspace/drive/api/guides/limited-expansive-access）"
 NETWORK_TIMEOUT_ERR = "タイムアウトが発生しました。"
 PERMISSION_SETTING_EXECUTE_ERR_LOG = "「%d」行目 「%s」フォルダの移動に間違いがあります。エラー情報:%s"
 TAB_LINEFEED_REPLACE_REGEX = "[\t\r\n]"
@@ -32,7 +34,14 @@ def access_permission_add_or_upd(drive_service, file_id, account_list, role):
         }, {"sendNotificationEmail": False})
 
         if role != permission_info["role"]:
-            drive_service.update_permission(file_id, permission_info["id"], {"role": role})
+            try:
+                drive_service.update_permission(file_id, permission_info["id"], {"role": role})
+            except Exception as e:
+                err_info = re.sub(TAB_LINEFEED_REPLACE_REGEX, "", e.__str__())
+                if err_info.upper().__contains__("CANNOTMODIFYINHERITEDPERMISSION"):
+                    raise Exception(CANNOT_MODIFY_INHERITED_PERMISSION_ERR)
+                else:
+                    raise e
 
 
 def access_permission_remove(drive_service, file_id, remover_list):
@@ -45,6 +54,8 @@ def access_permission_remove(drive_service, file_id, remover_list):
             # the permission has been removed
             if err_info.upper().__contains__("PERMISSION NOT FOUND"):
                 pass
+            elif err_info.upper().__contains__("CANNOTDELETEPERMISSION"):
+                raise Exception(CANNOT_DELETE_PERMISSION_ERR)
             else:
                 raise e
 
