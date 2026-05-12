@@ -142,6 +142,28 @@ class GoogleApiDriveService:
 
         return self.method_wrapper(_update_file, allow_suspend)
 
+    def move_file(self, file_id, add_parents, remove_parents, allow_suspend=True):
+        """
+            move file to target folder
+        :param file_id:
+        :param add_parents: target parent folder id
+        :param remove_parents: current parent folder id
+        :param allow_suspend:
+        :return:
+        """
+
+        def _move_file(service):
+            response = service.files().update(
+                fileId=file_id,
+                addParents=add_parents,
+                removeParents=remove_parents,
+                body={},
+                fields="parents,permissions"
+            ).execute()
+            return response
+
+        return self.method_wrapper(_move_file, allow_suspend)
+
     def update_file_content(self, file_id, fd, mimetype, allow_suspend=True):
         """
             update file content by io

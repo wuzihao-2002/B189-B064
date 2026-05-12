@@ -73,12 +73,22 @@ class FolderMover(BasicSettingLauncher):
         line_num = moving_info.line_num
         err_info = None
         try:
-            # update folder parent id
             file_id = moving_info.file_id
             parent_id = moving_info.parent_id
-            google_file_metadata = self.drive_service.update_file(file_id, {"addParents": parent_id,
-                                                                            "fields": "permissions"})
-            # when permission is change,reset access permission
+
+            # get current parents before moving
+            current_file_info = self.drive_service.get_file_metadata(file_id, "parents")
+            current_parents = ",".join(current_file_info.get("parents", []))
+
+            # move file: addParents/removeParents as query params
+            google_file_metadata = self.drive_service.move_file(file_id, parent_id, current_parents)
+
+            # confirm move result: only target parent should remain
+            moved_parents = google_file_metadata.get("parents", [])
+            if parent_id not in moved_parents or len(moved_parents) != 1:
+                raise Exception("フォルダ移動後のparents確認失敗。期待: [%s], 実際: %s" % (parent_id, moved_parents))
+
+            # when permission is changed, reset access permission
             self.permission_reset(file_id, google_file_metadata, file_detail)
         except Exception as e:
             err_info = re.sub(TAB_LINEFEED_REPLACE_REGEX, "", e.__str__())
@@ -91,7 +101,7 @@ class FolderMover(BasicSettingLauncher):
         self.execute_result_record(file_detail, err_info, line_num)
 
         # update set result
-        self.setting_sqlite.save_set_result({"file_detail": file_detail, "update_writer": False})
+        self.setting_sqlite.save_set_result({"file_detail": file_detail, "update_writer": False, "update_reader": False})
 
     def permission_reset(self, file_id, google_file_metadata, file_detail):
         """
