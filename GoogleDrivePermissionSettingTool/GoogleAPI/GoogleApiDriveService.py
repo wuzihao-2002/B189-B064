@@ -327,7 +327,7 @@ class GoogleApiDriveService:
             return target(service)
         except Exception as e:
             ex_message = e.__str__()
-            if re.search(r"LIMIT|QUOTA|RATE|TIMED OUT", ex_message, re.I):
+            if re.search(r"\bLIMIT\b|QUOTA|RATE[\s_]?LIMIT|TIMED OUT", ex_message, re.I):
                 raise LimitException(e)
             else:
                 raise e
